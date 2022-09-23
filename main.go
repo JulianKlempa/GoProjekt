@@ -1,7 +1,9 @@
 package main
 
-import "fmt"
+import (
+	server "digitalDistribution/server"
+)
 
 func main() {
-	fmt.Println("Hello, World!")
+	server.StartServer()
 }

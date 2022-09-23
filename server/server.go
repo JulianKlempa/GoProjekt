@@ -1,7 +1,14 @@
-package main
+package server
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+	"net/http"
+)
 
-func main() {
-	fmt.Println("Hello, World!")
+func StartServer() {
+	http.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
+		fmt.Fprint(res, "Hello, World!")
+	})
+	log.Fatal(http.ListenAndServe(":9000", nil))
 }

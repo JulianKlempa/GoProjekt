@@ -1,3 +1,3 @@
-module server/main
+module digitalDistribution
 
 go 1.19
