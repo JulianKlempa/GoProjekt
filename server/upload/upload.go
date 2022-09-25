@@ -1,4 +1,4 @@
-package server
+package upload
 
 import (
 	"crypto/sha256"
@@ -7,15 +7,12 @@ import (
 	"net/http"
 )
 
-type myhandler struct {
-	fs http.Handler
+type UploadHandler struct {
+	Handler http.Handler
 }
 
-func (h myhandler) ServeUpload(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "PUT" {
-		return
-	}
-	username, password, ok := r.BasicAuth()
+func (h UploadHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+	username, password, ok := req.BasicAuth()
 
 	if ok {
 		usernameHash := sha256.Sum256([]byte(username))
@@ -28,7 +25,13 @@ func (h myhandler) ServeUpload(w http.ResponseWriter, r *http.Request) {
 
 		if usernameMatch && passwordMatch {
 			fmt.Println("Authenticated")
+			if req.Method != "POST" {
+				fmt.Println("No POST")
+				return
+			}
 			return
 		}
 	}
+	res.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
+	http.Error(res, "Unauthorized", http.StatusUnauthorized)
 }
