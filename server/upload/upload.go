@@ -37,7 +37,7 @@ func (h UploadHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 			req.ParseMultipartForm(32 << 20) // limit your max input length!
 			var buf bytes.Buffer
 			// in your case file would be fileupload
-			file, header, err := req.FormFile("file")
+			file, header, err := req.FormFile("zip")
 			if err != nil {
 				panic(err)
 			}
