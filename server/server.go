@@ -12,6 +12,9 @@ func StartServer() {
 	http.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
 		fmt.Fprint(res, "Hello, World!")
 	})
+	//fs := http.StripPrefix("/upload/", http.FileServer(http.Dir(".")))
+	//http.Handle("/upload/", server.ServeUpload{fs: fs})
+
 	baseFilePath, err := os.Getwd()
 
 	if err != nil {
