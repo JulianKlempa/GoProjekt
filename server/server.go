@@ -21,8 +21,8 @@ func StartServer() {
 
 	fmt.Println(baseFilePath)
 
-	certificateFilePath := filepath.Join(baseFilePath, "server", "ssl", "localhost.crt")
-	keyFilePath := filepath.Join(baseFilePath, "server", "ssl", "localhost.key")
+	certificateFilePath := filepath.Join(baseFilePath, "resources", "localhost.crt")
+	keyFilePath := filepath.Join(baseFilePath, "resources", "localhost.key")
 
 	log.Fatal(http.ListenAndServeTLS(":9000", certificateFilePath, keyFilePath, nil))
 }
