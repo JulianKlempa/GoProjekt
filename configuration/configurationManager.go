@@ -30,3 +30,22 @@ func WriteConfig(configuration Configuration) {
 	encoder.SetIndent("", "   ")
 	encoder.Encode(configuration)
 }
+
+func GetCredentials() map[string][]byte {
+	conf := ReadConfig()
+	return conf.Credentials
+}
+
+func SetConfig(credentials map[string][]byte, savesCount int) {
+	if savesCount > 20 {
+		savesCount = 20
+	} else if savesCount < 0 {
+		savesCount = 0
+	}
+
+	conf := Configuration{}
+	conf.Credentials = credentials
+	conf.SavesCount = savesCount
+
+	WriteConfig(conf)
+}

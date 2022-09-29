@@ -16,20 +16,11 @@ func main() {
 	passwordHash := sha256.Sum256([]byte(password))
 	var savesCount int
 	flag.IntVar(&savesCount, "savesCount", 20, "naumber of saved states")
-	if savesCount > 20 {
-		savesCount = 20
-	} else if savesCount < 0 {
-		savesCount = 0
-	}
 
 	credentials := make(map[string][]byte)
 	credentials[username] = passwordHash[:]
 
-	conf := configuration.Configuration{}
-	conf.Credentials = credentials
-	conf.SavesCount = savesCount
-
-	configuration.WriteConfig(conf)
+	configuration.SetConfig(credentials, savesCount)
 	filemanager.Setup()
 	server.StartServer()
 }
