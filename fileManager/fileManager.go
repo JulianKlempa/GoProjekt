@@ -30,16 +30,27 @@ func SaveFile(file multipart.File, fileName string) {
 	}
 }
 
+func writeNewCSV(data [][]string) {
+	f, err := os.OpenFile("./digitalFiles/digitalReleases.csv", os.O_WRONLY|os.O_CREATE, 0777)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	writer := csv.NewWriter(f)
+	writer.WriteAll(data)
+	writer.Flush()
+}
+
 func writeCSV(versionInfo []string, filepath string) {
 	f, err := os.OpenFile("./digitalFiles/digitalReleases.csv", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
 	if err != nil {
 		panic(err)
 	}
+	defer f.Close()
 	writer := csv.NewWriter(f)
 	versionInfo = append(versionInfo, filepath)
 	writer.Write(versionInfo[:])
 	writer.Flush()
-	f.Close()
 }
 
 func enforceUploadLimit() {
@@ -78,6 +89,7 @@ func enforceUploadLimit() {
 			fmt.Println(err)
 		}
 	}
+	writeNewCSV(data)
 }
 
 func getVersionInfo(file multipart.File) []string {
