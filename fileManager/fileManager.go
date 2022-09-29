@@ -3,38 +3,81 @@ package filemanager
 import (
 	"archive/zip"
 	"bytes"
+	"digitalDistribution/configuration"
 	"encoding/csv"
 	"errors"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"os"
+	"sort"
+	"strconv"
 	"strings"
 )
 
 func SaveFile(file multipart.File, fileName string) {
 	versionInfo := getVersionInfo(file)
-	fileNameSplit := strings.Split(fileName, ".")
-	filePath := "./digitalFiles/" + fileNameSplit[0] + "_" + versionInfo[1] + "." + fileNameSplit[1]
+	filePath := "./digitalFiles/Digital_" + versionInfo[1] + ".zip"
 	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) {
-		writeCSV(versionInfo)
+		writeCSV(versionInfo, filePath)
 		f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0777)
 		if err != nil {
 			panic(err)
 		}
 		defer f.Close()
 		io.Copy(f, file)
+		enforceUploadLimit()
 	}
 }
 
-func writeCSV(versionInfo []string) {
-	f, err := os.OpenFile("./digitalFiles/digitalReleses.csv", os.O_WRONLY|os.O_CREATE, 0777)
+func writeCSV(versionInfo []string, filepath string) {
+	f, err := os.OpenFile("./digitalFiles/digitalReleases.csv", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
 	if err != nil {
 		panic(err)
 	}
 	writer := csv.NewWriter(f)
+	versionInfo = append(versionInfo, filepath)
 	writer.Write(versionInfo[:])
 	writer.Flush()
 	f.Close()
+}
+
+func enforceUploadLimit() {
+	limit := configuration.ReadConfig().SavesCount
+	f, err := os.OpenFile("./digitalFiles/digitalReleases.csv", os.O_RDONLY|os.O_CREATE, 0777)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	data, err := csv.NewReader(f).ReadAll()
+	if err != nil {
+		panic(err)
+	}
+	sort.Slice(data, func(i, j int) bool {
+		iStrings := strings.Split(strings.TrimLeft(data[i][1], "v"), ".")
+		jStrings := strings.Split(strings.TrimLeft(data[j][1], "v"), ".")
+
+		iMajor, err1 := strconv.ParseInt(iStrings[0], 0, 64)
+		iMinor, err2 := strconv.ParseInt(iStrings[1], 0, 64)
+		jMajor, err3 := strconv.ParseInt(jStrings[0], 0, 64)
+		jMinor, err4 := strconv.ParseInt(jStrings[1], 0, 64)
+
+		if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
+			panic(err1.Error() + err2.Error() + err3.Error() + err4.Error())
+		}
+		if iMajor == jMajor {
+			return iMinor < jMinor
+		}
+		return iMajor < jMajor
+	})
+	for limit < len(data) {
+		var element []string
+		element, data = data[0], data[1:]
+		err := os.Remove(element[3])
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
 }
 
 func getVersionInfo(file multipart.File) []string {
@@ -72,4 +115,5 @@ func getVersionInfo(file multipart.File) []string {
 
 func Setup() {
 	os.Mkdir("digitalFiles", 0777)
+	enforceUploadLimit()
 }

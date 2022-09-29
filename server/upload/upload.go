@@ -35,7 +35,6 @@ func (h UploadHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 			filemanager.SaveFile(file, header.Filename)
 
 			return
-
 		}
 	}
 	res.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
