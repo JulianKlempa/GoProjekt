@@ -2,8 +2,8 @@ package upload
 
 import (
 	"crypto/sha256"
-	"crypto/subtle"
 	filemanager "digitalDistribution/fileManager"
+	"digitalDistribution/server/authentication"
 	"fmt"
 	"net/http"
 )
@@ -16,15 +16,9 @@ func (h UploadHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	username, password, ok := req.BasicAuth()
 
 	if ok {
-		usernameHash := sha256.Sum256([]byte(username))
 		passwordHash := sha256.Sum256([]byte(password))
-		expectedUsernameHash := sha256.Sum256([]byte("admin"))
-		expectedPasswordHash := sha256.Sum256([]byte("admin"))
 
-		usernameMatch := (subtle.ConstantTimeCompare(usernameHash[:], expectedUsernameHash[:]) == 1)
-		passwordMatch := (subtle.ConstantTimeCompare(passwordHash[:], expectedPasswordHash[:]) == 1)
-
-		if usernameMatch && passwordMatch {
+		if authentication.Authenticate(username, passwordHash) {
 			fmt.Println("Authenticated")
 			if req.Method != "POST" {
 				fmt.Println("No POST")

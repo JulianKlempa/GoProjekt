@@ -1,5 +1,14 @@
 package authentication
 
+import (
+	"crypto/subtle"
+	"digitalDistribution/configuration"
+)
+
 func Authenticate(username string, password [32]byte) bool {
-	return true
+	credentials := configuration.GetCredentials()
+	pass := credentials[username]
+
+	passwordMatch := (subtle.ConstantTimeCompare(password[:], pass[:]) == 1)
+	return passwordMatch
 }
