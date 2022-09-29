@@ -31,6 +31,9 @@ func SaveFile(file multipart.File, fileName string) {
 }
 
 func writeNewCSV(data [][]string) {
+	if err := os.Truncate("./digitalFiles/digitalReleases.csv", 0); err != nil {
+		panic(err)
+	}
 	f, err := os.OpenFile("./digitalFiles/digitalReleases.csv", os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
 		panic(err)
