@@ -1,6 +1,9 @@
+//author Julian Klempa (4085242)
+
 package server
 
 import (
+	"digitalDistribution/configuration"
 	"digitalDistribution/server/download"
 	mainpage "digitalDistribution/server/mainPage"
 	"digitalDistribution/server/upload"
@@ -30,5 +33,5 @@ func StartServer() {
 	certificateFilePath := filepath.Join(baseFilePath, "resources", "localhost.crt")
 	keyFilePath := filepath.Join(baseFilePath, "resources", "localhost.key")
 
-	log.Fatal(http.ListenAndServeTLS(":9000", certificateFilePath, keyFilePath, nil))
+	log.Fatal(http.ListenAndServeTLS(configuration.ReadConfig().Port, certificateFilePath, keyFilePath, nil))
 }

@@ -1,3 +1,5 @@
+//author Julian Klempa (4085242)
+
 package filemanager
 
 import (
