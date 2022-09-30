@@ -15,7 +15,7 @@ func main() {
 	flag.StringVar(&password, "password", "admin", "password for https server")
 	passwordHash := sha256.Sum256([]byte(password))
 	var savesCount int
-	flag.IntVar(&savesCount, "savesCount", 20, "naumber of saved states")
+	flag.IntVar(&savesCount, "savesCount", 2, "naumber of saved states")
 
 	credentials := make(map[string][]byte)
 	credentials[username] = passwordHash[:]

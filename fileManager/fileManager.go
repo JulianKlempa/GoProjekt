@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"digitalDistribution/configuration"
 	"encoding/json"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"os"
@@ -31,8 +32,9 @@ type Storage struct {
 
 func (s Storage) Contains(version Version) bool {
 	for _, element := range s.Files {
-		element.Version.Equals(version)
-		return true
+		if element.Version.Equals(version) {
+			return true
+		}
 	}
 	return false
 }
@@ -54,7 +56,7 @@ var storage Storage
 
 func Setup() {
 	os.Mkdir("digitalFiles", 0777)
-	f, err := os.OpenFile("./digitalFiles/files.json", os.O_WRONLY|os.O_CREATE, 0777)
+	f, err := os.OpenFile("./digitalFiles/files.json", os.O_RDONLY|os.O_CREATE, 0777)
 	if err != nil {
 		panic(err)
 	}
@@ -87,11 +89,13 @@ func SaveFile(file multipart.File) {
 		jsonFile.Version = version
 		jsonFile.BuildDate = versionInfo[2]
 		jsonFile.DownloadCounter = 0
+		file.Seek(0, io.SeekStart)
 		data, err := io.ReadAll(file)
 		if err != nil {
 			panic(err)
 		}
 		jsonFile.FileData = data
+		storage.Files = append(storage.Files, jsonFile)
 	}
 	enforceUploadLimit()
 	writeToFile()
@@ -107,9 +111,9 @@ func GetStorage() Storage {
 }
 
 func IncreaseDownloadCounter(version Version) {
-	for _, element := range storage.Files {
-		if element.Version.Equals(version) {
-			element.DownloadCounter++
+	for i := 0; i < len(storage.Files); i++ {
+		if storage.Files[i].Version.Equals(version) {
+			storage.Files[i].DownloadCounter++
 		}
 	}
 	writeToFile()
@@ -134,6 +138,9 @@ func enforceUploadLimit() {
 	})
 	for limit < len(storage.Files) {
 		_, storage.Files = storage.Files[0], storage.Files[1:]
+	}
+	for i, j := 0, len(storage.Files)-1; i < j; i, j = i+1, j-1 {
+		storage.Files[i], storage.Files[j] = storage.Files[j], storage.Files[i]
 	}
 }
 
@@ -160,10 +167,9 @@ func getVersionInfo(file multipart.File) []string {
 			lines := strings.Split(text, "\n")
 
 			var valueArray [3]string
-			for i := 0; i < 3; i++ {
-				valueArray[i] = strings.TrimSpace(strings.Split(lines[i+2], ":")[1])
-			}
-
+			valueArray[0] = strings.TrimSpace(strings.Split(lines[2], ":")[1])
+			valueArray[1] = strings.TrimSpace(strings.Split(lines[3], ":")[1])
+			valueArray[2] = fmt.Sprintf("%s:%s", strings.TrimSpace(strings.Split(lines[4], ":")[1]), strings.TrimSpace(strings.Split(lines[4], ":")[2]))
 			return valueArray[:]
 		}
 	}
