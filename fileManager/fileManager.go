@@ -30,9 +30,22 @@ func SaveFile(file multipart.File, fileName string) {
 			panic(err)
 		}
 		defer f.Close()
+		file.Seek(0, io.SeekStart)
 		io.Copy(f, file)
 		enforceUploadLimit()
 	}
+}
+
+func GetFile(fileName string) *bytes.Reader {
+	f, err := os.OpenFile("./digitalFiles/"+fileName, os.O_RDONLY, 0777)
+	if err != nil {
+		panic(err)
+	}
+	data, err := io.ReadAll(f)
+	if err != nil {
+		panic(err)
+	}
+	return bytes.NewReader(data)
 }
 
 func GetCurrentData() [][]string {

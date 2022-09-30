@@ -1,13 +1,16 @@
 package download
 
 import (
-	"fmt"
+	filemanager "digitalDistribution/fileManager"
+	"io"
 	"net/http"
 	"strings"
 )
 
 func ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	queryStrings := strings.Split(req.URL.Query().Get("file"), "/")
-	fmt.Println(queryStrings[len(queryStrings)-1])
+	res.Header().Set("Content-Disposition", "attachment; filename=Digital.zip")
+	res.Header().Set("Content-Type", "application/zip")
+	io.Copy(res, filemanager.GetFile(queryStrings[len(queryStrings)-1]))
 	http.Redirect(res, req, "/", http.StatusPermanentRedirect)
 }
