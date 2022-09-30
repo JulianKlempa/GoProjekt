@@ -4,9 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"digitalDistribution/configuration"
-	"encoding/csv"
-	"errors"
-	"fmt"
+	"encoding/json"
 	"io"
 	"mime/multipart"
 	"os"
@@ -15,107 +13,128 @@ import (
 	"strings"
 )
 
+type Version struct {
+	MajorVersion int
+	MinorVersion int
+}
+
+type File struct {
+	BuildDate       string
+	FileData        []byte
+	Version         Version
+	DownloadCounter int
+}
+
+type Storage struct {
+	Files []File
+}
+
+func (s Storage) Contains(version Version) bool {
+	for _, element := range s.Files {
+		element.Version.Equals(version)
+		return true
+	}
+	return false
+}
+
+func (s Storage) Get(version Version) File {
+	for _, element := range s.Files {
+		if element.Version.Equals(version) {
+			return element
+		}
+	}
+	return File{}
+}
+
+func (v Version) Equals(version Version) bool {
+	return v.MajorVersion == version.MajorVersion && v.MinorVersion == version.MinorVersion
+}
+
+var storage Storage
+
 func Setup() {
 	os.Mkdir("digitalFiles", 0777)
-	enforceUploadLimit()
-}
-
-func SaveFile(file multipart.File, fileName string) {
-	versionInfo := getVersionInfo(file)
-	filePath := "./digitalFiles/Digital_" + versionInfo[1] + ".zip"
-	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) {
-		writeCSV(versionInfo, filePath)
-		f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0777)
-		if err != nil {
-			panic(err)
-		}
-		defer f.Close()
-		file.Seek(0, io.SeekStart)
-		io.Copy(f, file)
-		enforceUploadLimit()
-	}
-}
-
-func GetFile(fileName string) *bytes.Reader {
-	f, err := os.OpenFile("./digitalFiles/"+fileName, os.O_RDONLY, 0777)
+	f, err := os.OpenFile("./digitalFiles/files.json", os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
 		panic(err)
 	}
+	defer f.Close()
 	data, err := io.ReadAll(f)
 	if err != nil {
 		panic(err)
 	}
-	return bytes.NewReader(data)
+	json.Unmarshal(data, &storage)
+	enforceUploadLimit()
+	writeToFile()
 }
 
-func GetCurrentData() [][]string {
-	f, err := os.OpenFile("./digitalFiles/digitalReleases.csv", os.O_RDONLY|os.O_CREATE, 0777)
+func SaveFile(file multipart.File) {
+	jsonFile := File{}
+	versionInfo := getVersionInfo(file)
+	versionStrings := strings.Split(versionInfo[1], ".")
+	version := Version{}
+	majorVersion, err := strconv.ParseInt(strings.TrimLeft(versionStrings[0], "v"), 0, 64)
 	if err != nil {
 		panic(err)
 	}
-	defer f.Close()
-	data, err := csv.NewReader(f).ReadAll()
+	minorVersion, err := strconv.ParseInt(versionStrings[1], 0, 64)
 	if err != nil {
 		panic(err)
 	}
-	return data
+	version.MajorVersion = int(majorVersion)
+	version.MinorVersion = int(minorVersion)
+	if !storage.Contains(version) {
+		jsonFile.Version = version
+		jsonFile.BuildDate = versionInfo[2]
+		jsonFile.DownloadCounter = 0
+		data, err := io.ReadAll(file)
+		if err != nil {
+			panic(err)
+		}
+		jsonFile.FileData = data
+	}
+	enforceUploadLimit()
+	writeToFile()
 }
 
-func writeNewCSV(data [][]string) {
-	if err := os.Truncate("./digitalFiles/digitalReleases.csv", 0); err != nil {
-		panic(err)
-	}
-	f, err := os.OpenFile("./digitalFiles/digitalReleases.csv", os.O_WRONLY|os.O_CREATE, 0777)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-	writer := csv.NewWriter(f)
-	writer.WriteAll(data)
-	writer.Flush()
+func GetFile(version Version) *bytes.Reader {
+	file := storage.Get(version)
+	return bytes.NewReader(file.FileData)
 }
 
-func writeCSV(versionInfo []string, filepath string) {
-	f, err := os.OpenFile("./digitalFiles/digitalReleases.csv", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
+func GetStorage() Storage {
+	return storage
+}
+
+func IncreaseDownloadCounter(version Version) {
+	for _, element := range storage.Files {
+		if element.Version.Equals(version) {
+			element.DownloadCounter++
+		}
+	}
+	writeToFile()
+}
+
+func writeToFile() {
+	file, _ := json.MarshalIndent(storage, "", " ")
+	f, err := os.OpenFile("./digitalFiles/files.json", os.O_RDONLY|os.O_CREATE, 0777)
 	if err != nil {
 		panic(err)
 	}
-	defer f.Close()
-	writer := csv.NewWriter(f)
-	versionInfo = append(versionInfo, filepath)
-	writer.Write(versionInfo[:])
-	writer.Flush()
+	io.Copy(f, bytes.NewBuffer(file))
 }
 
 func enforceUploadLimit() {
 	limit := configuration.ReadConfig().SavesCount
-	data := GetCurrentData()
-	sort.Slice(data, func(i, j int) bool {
-		iStrings := strings.Split(strings.TrimLeft(data[i][1], "v"), ".")
-		jStrings := strings.Split(strings.TrimLeft(data[j][1], "v"), ".")
-
-		iMajor, err1 := strconv.ParseInt(iStrings[0], 0, 64)
-		iMinor, err2 := strconv.ParseInt(iStrings[1], 0, 64)
-		jMajor, err3 := strconv.ParseInt(jStrings[0], 0, 64)
-		jMinor, err4 := strconv.ParseInt(jStrings[1], 0, 64)
-
-		if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
-			panic(err1.Error() + err2.Error() + err3.Error() + err4.Error())
+	sort.Slice(storage.Files, func(i, j int) bool {
+		if storage.Files[i].Version.MajorVersion == storage.Files[j].Version.MajorVersion {
+			return storage.Files[i].Version.MinorVersion < storage.Files[j].Version.MinorVersion
 		}
-		if iMajor == jMajor {
-			return iMinor < jMinor
-		}
-		return iMajor < jMajor
+		return storage.Files[i].Version.MajorVersion < storage.Files[j].Version.MajorVersion
 	})
-	for limit < len(data) {
-		var element []string
-		element, data = data[0], data[1:]
-		err := os.Remove(element[3])
-		if err != nil {
-			fmt.Println(err)
-		}
+	for limit < len(storage.Files) {
+		_, storage.Files = storage.Files[0], storage.Files[1:]
 	}
-	writeNewCSV(data)
 }
 
 func getVersionInfo(file multipart.File) []string {

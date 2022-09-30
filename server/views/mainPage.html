@@ -15,10 +15,10 @@
         </tr>
         {{ range .Items}}
         <tr>
-            <td>{{ .RevisionNumber }}</td>
+            <td>Version {{ .RevisionNumber }}</td>
             <td>{{ .BuildDate }}</td>
             <td>
-                <a href="{{ .DownloadFile }}" onclick="this.href='./downloads/?file=' + href">Download</a>
+                <a href="{{ .RevisionNumber }}" onclick="this.href='./downloads/?version=' + href">Download</a>
             </td>
         </tr>
         {{ end}}

@@ -2,15 +2,14 @@ package mainpage
 
 import (
 	filemanager "digitalDistribution/fileManager"
+	"fmt"
 	"html/template"
 	"net/http"
-	"strings"
 )
 
 type TableRow struct {
 	RevisionNumber string
 	BuildDate      string
-	DownloadFile   string
 }
 
 type Data struct {
@@ -18,14 +17,12 @@ type Data struct {
 }
 
 func getCurrentData() Data {
-	dataRaw := filemanager.GetCurrentData()
+	dataRaw := filemanager.GetStorage().Files
 	var items []TableRow
 	for _, item := range dataRaw[:] {
 		var tableRow TableRow
-		tableRow.RevisionNumber = item[1]
-		tableRow.BuildDate = item[2]
-		fileStrings := strings.Split(item[3], "/")
-		tableRow.DownloadFile = fileStrings[len(fileStrings)-1]
+		tableRow.RevisionNumber = fmt.Sprintf("%d.%d", item.Version.MajorVersion, item.Version.MinorVersion)
+		tableRow.BuildDate = item.BuildDate
 		items = append(items, tableRow)
 	}
 	return Data{Items: items}

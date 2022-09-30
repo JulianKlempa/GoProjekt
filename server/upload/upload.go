@@ -23,12 +23,12 @@ func ServeHTTP(res http.ResponseWriter, req *http.Request) {
 			fmt.Println("Authenticated and post")
 
 			req.ParseMultipartForm(32 << 20)
-			file, header, err := req.FormFile("fileupload")
+			file, _, err := req.FormFile("fileupload")
 			if err != nil {
 				panic(err)
 			}
 			defer file.Close()
-			filemanager.SaveFile(file, header.Filename)
+			filemanager.SaveFile(file)
 
 			return
 		}
