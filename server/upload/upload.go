@@ -8,11 +8,7 @@ import (
 	"net/http"
 )
 
-type UploadHandler struct {
-	Handler http.Handler
-}
-
-func (h UploadHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+func ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	username, password, ok := req.BasicAuth()
 
 	if ok {

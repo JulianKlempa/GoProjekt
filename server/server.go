@@ -1,6 +1,8 @@
 package server
 
 import (
+	"digitalDistribution/server/download"
+	mainpage "digitalDistribution/server/mainPage"
 	"digitalDistribution/server/upload"
 	"fmt"
 	"log"
@@ -10,11 +12,11 @@ import (
 )
 
 func StartServer() {
-	http.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
-		fmt.Fprint(res, "Hello, World!")
-	})
-	fs := http.StripPrefix("/upload/", http.FileServer(http.Dir(".")))
-	http.Handle("/upload/", upload.UploadHandler{Handler: fs})
+	http.HandleFunc("/", mainpage.ServeHTTP)
+
+	http.HandleFunc("/upload/", upload.ServeHTTP)
+
+	http.HandleFunc("/downloads/", download.ServeHTTP)
 
 	baseFilePath, err := os.Getwd()
 

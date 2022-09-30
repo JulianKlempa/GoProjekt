@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Digital Distribution</title>
+    <link rel="stylesheet" href="button.css">
+</head>
+
+<body>
+    <table>
+        <tr>
+            <th>Revision Number</th>
+            <th>Build Date</th>
+            <th>Download Link</th>
+        </tr>
+        {{ range .Items}}
+        <tr>
+            <td>{{ .RevisionNumber }}</td>
+            <td>{{ .BuildDate }}</td>
+            <td>
+                <a href="{{ .DownloadFile }}" onclick="this.href='./downloads/?file=' + href">Download</a>
+            </td>
+        </tr>
+        {{ end}}
+    </table>
+</body>
+
+</html>

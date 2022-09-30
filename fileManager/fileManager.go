@@ -15,6 +15,11 @@ import (
 	"strings"
 )
 
+func Setup() {
+	os.Mkdir("digitalFiles", 0777)
+	enforceUploadLimit()
+}
+
 func SaveFile(file multipart.File, fileName string) {
 	versionInfo := getVersionInfo(file)
 	filePath := "./digitalFiles/Digital_" + versionInfo[1] + ".zip"
@@ -28,6 +33,19 @@ func SaveFile(file multipart.File, fileName string) {
 		io.Copy(f, file)
 		enforceUploadLimit()
 	}
+}
+
+func GetCurrentData() [][]string {
+	f, err := os.OpenFile("./digitalFiles/digitalReleases.csv", os.O_RDONLY|os.O_CREATE, 0777)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	data, err := csv.NewReader(f).ReadAll()
+	if err != nil {
+		panic(err)
+	}
+	return data
 }
 
 func writeNewCSV(data [][]string) {
@@ -58,15 +76,7 @@ func writeCSV(versionInfo []string, filepath string) {
 
 func enforceUploadLimit() {
 	limit := configuration.ReadConfig().SavesCount
-	f, err := os.OpenFile("./digitalFiles/digitalReleases.csv", os.O_RDONLY|os.O_CREATE, 0777)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-	data, err := csv.NewReader(f).ReadAll()
-	if err != nil {
-		panic(err)
-	}
+	data := GetCurrentData()
 	sort.Slice(data, func(i, j int) bool {
 		iStrings := strings.Split(strings.TrimLeft(data[i][1], "v"), ".")
 		jStrings := strings.Split(strings.TrimLeft(data[j][1], "v"), ".")
@@ -126,9 +136,4 @@ func getVersionInfo(file multipart.File) []string {
 		}
 	}
 	return nil
-}
-
-func Setup() {
-	os.Mkdir("digitalFiles", 0777)
-	enforceUploadLimit()
 }
